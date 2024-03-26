@@ -4,6 +4,7 @@ local config = require('telescope.config').values
 local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
 local utils = require('dot.utils')
+local shortcut = require('dot.shortcut')
 
 local M = {}
 
@@ -14,7 +15,7 @@ function M.stories(opts)
     .new(opts, {
       prompt_title = 'Stories',
       finder = finders.new_table({
-        results = utils.get_stories(),
+        results = shortcut.get_stories(),
         entry_maker = function(entry)
           return {
             value = entry,
@@ -28,8 +29,8 @@ function M.stories(opts)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
-          local branch = utils.get_story_branch({
-            mention_name = utils.get_current_user().mention_name,
+          local branch = shortcut.get_story_branch({
+            mention_name = vim.g.dot_viewer.mention_name,
             id = selection.value.id,
             name = selection.value.name,
           })
