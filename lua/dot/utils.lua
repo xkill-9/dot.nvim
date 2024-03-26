@@ -1,4 +1,3 @@
-local curl = require('plenary.curl')
 local _, Job = pcall(require, 'plenary.job')
 
 local M = {}
@@ -18,6 +17,10 @@ function M.slugify(name)
 
   -- limit to 40 characters
   return string.sub(s, 1, 40)
+end
+
+function M.startsWith(str, prefix)
+  return string.sub(str, 1, string.len(prefix)) == prefix
 end
 
 function M.git_create_branch(branch)

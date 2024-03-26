@@ -25,14 +25,9 @@ function M.get_current_user()
 end
 
 function M.get_stories()
-  -- Lazy load current user
-  if not vim.g.dot_viewer then
-    vim.g.dot_viewer = M.get_current_user()
-  end
-
   local query = { page_size = 25, query = string.format('owner:%s', vim.g.dot_viewer.mention_name), detail = 'slim' }
-  local results = curl.get('https://api.app.shortcut.com/api/v3/search/stories', {
-    headers = get_headers(),
+  local results = M.request({
+    url = 'search/stories',
     query = query,
   })
   local resp = vim.fn.json_decode(results.body).data
@@ -42,6 +37,32 @@ function M.get_stories()
   end
 
   return resp
+end
+
+function M.request(opts)
+  opts = opts or {}
+  local spec = {
+    headers = get_headers(),
+  }
+  -- Lazy load current user on the first request
+  if not vim.g.dot_viewer then
+    vim.g.dot_viewer = M.get_current_user()
+  end
+
+  -- default to get request
+  opts = vim.tbl_extend('keep', opts, {
+    method = 'get',
+  })
+
+  if utils.startsWith(opts.url, 'http') then
+    spec.url = opts.url
+  else
+    spec.url = 'https://api.app.shortcut.com/api/v3/' .. opts.url
+  end
+
+  opts = vim.tbl_extend('force', opts, spec)
+
+  return curl.request(opts)
 end
 
 return M
