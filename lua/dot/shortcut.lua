@@ -1,34 +1,44 @@
 local curl = require('plenary.curl')
 local utils = require('dot.utils')
+local vim = vim
 
 local M = {}
 
-local function get_token()
-  return vim.env['SHORTCUT_API_TOKEN']
-end
+local headers = {
+  ['Shortcut-Token'] = vim.env['SHORTCUT_API_TOKEN'],
+  content_type = 'application/json',
+}
 
-local function get_headers()
-  return {
-    ['Shortcut-Token'] = get_token(),
-    content_type = 'application/json',
-  }
-end
+---Returns the currently authenticated member
+---@return Member|nil
+function M.get_current_member()
+  local res = curl.get('https://api.app.shortcut.com/api/v3/member', { headers = headers })
 
-function M.get_story_branch(opts)
-  return opts.mention_name .. '/sc-' .. opts.id .. '/' .. utils.slugify(opts.name)
-end
-
-function M.get_current_user()
-  local res = curl.get('https://api.app.shortcut.com/api/v3/member', { headers = get_headers() })
+  if res.status ~= 200 then
+    utils.error('Unable to authenticate')
+    return
+  end
 
   return vim.fn.json_decode(res.body)
 end
 
+---Returns the search params for the current member's unfinished Stories.
+---@param viewer Member
+---@return table
+local function get_current_member_stories_search_params(viewer)
+  return {
+    page_size = 25,
+    query = string.format('owner:%s !is:done !is:archived', viewer.mention_name),
+    detail = 'slim',
+  }
+end
+
+---Returns the list of stories currently owned by the user.
+---@return Story[]
 function M.get_stories()
-  local query = { page_size = 25, query = string.format('owner:%s', vim.g.dot_viewer.mention_name), detail = 'slim' }
-  local results = M.request({
-    url = 'search/stories',
-    query = query,
+  local results = M.search({
+    entity_type = 'stories',
+    query = get_current_member_stories_search_params,
   })
   local resp = vim.fn.json_decode(results.body).data
 
@@ -39,22 +49,56 @@ function M.get_stories()
   return resp
 end
 
+function M.search(opts)
+  opts = opts or {}
+  local spec = {
+    url = 'search',
+  }
+
+  -- Lazy load current user on the first request
+  if not vim.g.dot_viewer then
+    vim.g.dot_viewer = M.get_current_member()
+  end
+
+  if opts.entity_type then
+    spec.url = spec.url .. '/' .. opts.entity_type
+  end
+
+  if opts.query ~= nil and type(opts.query) == 'function' then
+    spec.query = opts.query(vim.g.dot_viewer)
+  else
+    spec.query = opts.query
+  end
+
+  opts = vim.tbl_extend('force', opts, spec)
+
+  return M.request(opts)
+end
+
+--- Get a valid story branch name for git
+---@param id string
+---@param name string
+---@return string
+function M.get_story_branch(id, name)
+  local slugified_name = utils.slugify(name)
+  -- limit to 40 characters
+  slugified_name = string.sub(slugified_name, 1, 40)
+
+  return vim.g.dot_viewer.mention_name .. '/sc-' .. id .. '/' .. slugified_name
+end
+
 function M.request(opts)
   opts = opts or {}
   local spec = {
-    headers = get_headers(),
+    headers = headers,
   }
-  -- Lazy load current user on the first request
-  if not vim.g.dot_viewer then
-    vim.g.dot_viewer = M.get_current_user()
-  end
 
   -- default to get request
   opts = vim.tbl_extend('keep', opts, {
     method = 'get',
   })
 
-  if utils.startsWith(opts.url, 'http') then
+  if vim.startswith(opts.url, 'http') then
     spec.url = opts.url
   else
     spec.url = 'https://api.app.shortcut.com/api/v3/' .. opts.url

@@ -2,10 +2,16 @@ local _, Job = pcall(require, 'plenary.job')
 
 local M = {}
 
+function M.error(msg)
+  vim.notify(msg, vim.log.levels.ERROR, { title = 'Dot.nvim' })
+end
+
 function M.info(msg)
   vim.notify(msg, vim.log.levels.INFO, { title = 'Dot.nvim' })
 end
 
+--- Returns the alphanumerical words in a string separated with a dash.
+--- @param name string
 function M.slugify(name)
   local s = ''
   for word in string.gmatch(name, '%a+') do
@@ -13,16 +19,11 @@ function M.slugify(name)
   end
 
   -- remove trailing '-'
-  s = string.sub(s, 1, -2)
-
-  -- limit to 40 characters
-  return string.sub(s, 1, 40)
+  return string.sub(s, 1, -2)
 end
 
-function M.startsWith(str, prefix)
-  return string.sub(str, 1, string.len(prefix)) == prefix
-end
-
+---Creates a git branch and switches to it.
+---@param branch string
 function M.git_create_branch(branch)
   if not Job then
     return

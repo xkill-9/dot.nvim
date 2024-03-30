@@ -5,6 +5,7 @@ local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
 local utils = require('dot.utils')
 local shortcut = require('dot.shortcut')
+local vim = vim
 
 local M = {}
 
@@ -29,11 +30,7 @@ function M.stories(opts)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
-          local branch = shortcut.get_story_branch({
-            mention_name = vim.g.dot_viewer.mention_name,
-            id = selection.value.id,
-            name = selection.value.name,
-          })
+          local branch = shortcut.get_story_branch(selection.value.id, selection.value.name)
           utils.git_create_branch(branch)
         end)
         return true
