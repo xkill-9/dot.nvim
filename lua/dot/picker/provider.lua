@@ -14,12 +14,23 @@ local M = {}
 function M.stories(opts)
   local theme_opts = require('telescope.themes').get_dropdown({})
   opts = vim.tbl_deep_extend('force', theme_opts, opts or {})
+
+  utils.info('Fetching Stories ...')
+  local stories = shortcut.get_stories()
+
+  local max_id_length = -1
+  for _, story in ipairs(stories) do
+    if #tostring(story.id) > max_id_length then
+      max_id_length = #tostring(story.id)
+    end
+  end
+
   pickers
     .new(opts, {
       prompt_title = 'Stories',
       finder = finders.new_table({
         results = shortcut.get_stories(),
-        entry_maker = make_entry.from_story,
+        entry_maker = make_entry.make_from_story(max_id_length),
       }),
       sorter = config.generic_sorter(opts),
       attach_mappings = function(prompt_bufnr)
