@@ -4,7 +4,7 @@ local M = {}
 ---@field app_url string
 ---@field id string
 ---@field name string
----@field story_type string
+---@field story_type "feature" | "bug" | "chore"
 local Story = {}
 
 -- TODO: Add constructor

@@ -3,9 +3,11 @@ local finders = require('telescope.finders')
 local config = require('telescope.config').values
 local actions = require('telescope.actions')
 local action_state = require('telescope.actions.state')
+local vim = vim
+
 local utils = require('dot.utils')
 local shortcut = require('dot.shortcut')
-local vim = vim
+local make_entry = require('dot.picker.make_entry')
 
 local M = {}
 
@@ -17,21 +19,14 @@ function M.stories(opts)
       prompt_title = 'Stories',
       finder = finders.new_table({
         results = shortcut.get_stories(),
-        entry_maker = function(entry)
-          return {
-            value = entry,
-            display = entry.name,
-            ordinal = entry.name,
-          }
-        end,
+        entry_maker = make_entry.from_story,
       }),
       sorter = config.generic_sorter(opts),
       attach_mappings = function(prompt_bufnr)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
-          local branch = shortcut.get_story_branch(selection.value.id, selection.value.name)
-          utils.git_create_branch(branch)
+          utils.git_create_branch(selection.branch)
         end)
         return true
       end,
