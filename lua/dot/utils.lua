@@ -40,4 +40,17 @@ function M.git_create_branch(branch)
   }):start()
 end
 
+function M.open_in_browser_raw(url)
+  local os_name = vim.loop.os_uname().sysname
+  local is_windows = vim.loop.os_uname().version:match('Windows')
+
+  if os_name == 'Darwin' then
+    os.execute('open ' .. url)
+  elseif os_name == 'Linux' then
+    os.execute('xdg-open ' .. url)
+  elseif is_windows then
+    os.execute('start ' .. url)
+  end
+end
+
 return M
