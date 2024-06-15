@@ -56,6 +56,4 @@ function M.stories(opts)
     :find()
 end
 
-M.stories()
-
 return M
